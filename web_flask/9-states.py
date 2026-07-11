@@ -1,41 +1,29 @@
 #!/usr/bin/python3
-"""Starts a Flask web application.
-The application listens on 0.0.0.0, port 5000.
-Routes:
-    /states: HTML page with a list of all State objects.
-    /states/<id>: HTML page displaying the given state with <id>.
-"""
-from models import storage
+"""Starts a Flask web application."""
 from flask import Flask, render_template
+from models import storage
+from models.state import State
 
 app = Flask(__name__)
 
 
-@app.route("/states", strict_slashes=False)
-def states():
-    """Displays an HTML page with a list of all States.
-    States are sorted by name.
-    """
-    states = storage.all("State")  # Fetch fresh data
-    return render_template("9-states.html", states=states)  # Pass as 'states'
-
-
-@app.route("/states/<id>", strict_slashes=False)
-def states_id(id):
-    """Displays an HTML page with info about <id>, if it exists."""
-    states = storage.all("State")  # Fetch fresh data
-    state = None
-    for s in states.values():
-        if s.id == id:
-            state = s
-            break  # Found the state, no need to keep looping
-    return render_template("9-states.html", state=state)  # Pass as 'state'
-
-
 @app.teardown_appcontext
-def teardown(exc):
-    """Remove the current SQLAlchemy session."""
+def teardown(exception):
+    """Remove the current SQLAlchemy Session."""
     storage.close()
+
+
+@app.route('/states', strict_slashes=False)
+@app.route('/states/<id>', strict_slashes=False)
+def states(id=None):
+    """Display a HTML page with states or a specific state's cities."""
+    states = storage.all(State)
+    if id is not None:
+        key = "State." + id
+        state = states.get(key)
+        return render_template('9-states.html', state=state)
+    states = sorted(states.values(), key=lambda s: s.name)
+    return render_template('9-states.html', states=states)
 
 
 if __name__ == "__main__":
